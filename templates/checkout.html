@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}Payment - OrderFood{% endblock %}
+{% block content %}
+<div class="container-narrow" style="max-width:640px">
+<p class="eyebrow">Checkout</p>
+<h1>Payment</h1>
+<form method="POST" action="{{ url_for('checkout') }}" id="checkout-form"
+      data-create-url="{{ url_for('api_create_order') }}"
+      data-verify-url="{{ url_for('api_verify_payment') }}"
+      data-cancel-url="{{ url_for('api_cancel_order') }}"
+      data-key-id="{{ razorpay_key_id }}" data-email="{{ customer_email }}"
+      data-pending-order-id="{{ pending_razorpay_order_id }}">
+    {{ csrf_input() }}
+    <input type="hidden" name="token" value="{{ token }}">
+    <div class="box">
+        <label for="address">Deliver to</label>
+        <input type="text" id="address" name="address" required value="{{ address }}" placeholder="Flat / building, street, area">
+    </div>
+    <div class="box">
+        <h3>Order summary</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>#</th><th>Restaurant</th><th class="right">Amount</th></tr></thead>
+            <tbody>
+            {% for grp in groups %}<tr><td>{{ loop.index }}</td><td>{{ grp.name }}</td><td class="right">{{ grp.subtotal|money }}</td></tr>{% endfor %}
+            <tr><th colspan="2">Total</th><th class="right">{{ total|money }}</th></tr>
+            </tbody></table></div>
+    </div>
+    <div class="box">
+        <h3>Wallet balance: {{ balance|money }}</h3>
+        <div class="wallet-meter"><div class="fill {% if balance < total %}over{% endif %}" style="width:{{ (100 * (balance / total if total else 1))|round(0,'floor')|int if balance < total else 100 }}%"></div></div>
+        <p>Wallet after payment:
+            <strong>{% if balance >= total %}{{ (balance - total)|money }}{% else %}not enough balance{% endif %}</strong></p>
+        {% if balance < total %}<div class="notice">Your wallet has less than the total. Payments are made one restaurant at a time, so some may still succeed while others fail.</div>{% endif %}
+    </div>
+    <div class="row between">
+        <a class="btn btn-secondary" href="{{ url_for('view_cart') }}">Back to cart</a>
+        <button class="btn btn-secondary" type="submit">Pay {{ total|money }} from wallet</button>
+        {% if razorpay_key_id %}
+        <button class="btn btn-accent" type="button" id="razorpay-pay">Pay {{ total|money }} with Razorpay</button>
+        {% if pending_razorpay_order_id %}
+        <button class="btn btn-secondary" type="button" id="razorpay-cancel">Cancel pending payment</button>
+        {% endif %}
+        {% else %}
+        <p class="notice" role="status">Online payments are unavailable until Razorpay is configured.</p>
+        {% endif %}
+    </div>
+    <p id="payment-status" class="notice" role="status" hidden></p>
+</form>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+{% if razorpay_key_id %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{{ url_for('static', filename='razorpay_checkout.js') }}" defer></script>
+{% endif %}
+{% endblock %}

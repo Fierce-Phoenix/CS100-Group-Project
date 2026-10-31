@@ -1,0 +1,95 @@
+{% extends "dash_layout.html" %}
+{% block title %}Agent dashboard - OrderFood{% endblock %}
+{% block side_title %}Agent portal{% endblock %}
+{% block side_links %}
+<a href="#top">Dashboard</a><a href="#requests">Requests</a>
+<a href="{{ url_for('agent_active') }}">Active delivery</a><a href="#payout">Payout account</a><a href="#earnings">Earnings</a>
+{% endblock %}
+{% block content %}
+<div class="row between" id="top">
+    <div><p class="eyebrow">Agent portal</p><h1>My dashboard</h1></div>
+    <form method="POST" action="{{ url_for('agent_settings') }}">{{ csrf_input() }}
+        <input type="hidden" name="toggle_available" value="1">
+        <button class="btn {% if not agent.is_available %}btn-secondary{% else %}btn-accent{% endif %}" type="submit">
+            {{ 'Available (click to go offline)' if agent.is_available else 'Offline (click to go available)' }}</button></form>
+</div>
+
+<div class="stats" id="earnings">
+    <div class="stat"><div class="muted">Today's earnings</div><div class="num">{{ earned|money }}</div></div>
+    <div class="stat"><div class="muted">Internal wallet</div><div class="num">{{ wallet['balance']|money }}</div></div>
+</div>
+
+<div class="box">
+    <h3>Compensation preference</h3>
+    <form method="POST" action="{{ url_for('agent_settings') }}" class="segmented" role="group" aria-label="Compensation preference">
+        {{ csrf_input() }}
+        {% for key, text in PAY_LABELS.items() %}
+        <button type="submit" name="payment_method" value="{{ key }}"
+                {% if agent.payment_method == key %}aria-pressed="true"{% else %}aria-pressed="false"{% endif %}>
+            {{ text }}</button>
+        {% endfor %}
+    </form>
+    <p class="small muted" style="margin-top:.6rem">Rates: {{ PAY_RATES.per_order|money }} per order, {{ PAY_RATES.per_km|money }} per km, {{ PAY_RATES.per_min|money }} per minute.</p>
+</div>
+
+<div class="box" id="payout">
+    <h3>Delivery payout account</h3>
+    <p>Enter your approved Razorpay linked-account ID. Bank details stay with Razorpay; this app stores only the linked-account ID. Transfers require platform Route activation.</p>
+    <form method="POST" action="{{ url_for('agent_settings') }}">
+        {{ csrf_input() }}
+        <label for="agent-payout-account">Razorpay linked-account ID</label>
+        <input id="agent-payout-account" name="payout_account_id" type="text"
+               value="{{ agent.payout_account_id or '' }}" placeholder="acc_..." pattern="acc_[A-Za-z0-9]+">
+        <button class="btn btn-accent" type="submit">Save payout account</button>
+    </form>
+    {% if agent.payout_account_id %}
+    <form method="POST" action="{{ url_for('agent_settings') }}" style="margin-top:.7rem">
+        {{ csrf_input() }}<input type="hidden" name="process_pending" value="1">
+        <button class="btn btn-secondary" type="submit">Check pending payouts</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="section-head"><h2>Active delivery</h2></div>
+{% if active %}
+<div class="box row between"><span>Order #{{ active.order_id }} from {{ active.rest_name }} to {{ active.delivery_address }}
+    <span class="pill pill-{{ active.status }}">{{ active.status|label }}</span></span>
+    <a class="btn btn-accent" href="{{ url_for('agent_active') }}">Open</a></div>
+{% else %}<p class="muted">No active delivery.</p>{% endif %}
+
+<div class="section-head" id="requests"><h2>New delivery requests</h2></div>
+{% if not agent.is_available %}<p class="empty-state">You are offline. Go available to see requests.</p>
+{% elif requests %}
+{% for r in requests %}
+<div class="box req-card">
+    <div><strong class="r-name">{{ r.row.rest_name }}</strong><br>
+        <span class="muted small">Pickup: {{ r.row.rest_address }}</span><br>
+        <span class="muted">Drop: {{ r.row.delivery_address }}</span><br>
+        <span class="muted small">{{ r.row.distance_km }} km &middot; about {{ r.row.estimated_delivery_time|int }} min{% if r.pickup_km is not none %} &middot; pickup {{ r.pickup_km }} km from you{% endif %}</span></div>
+    <div class="row" style="align-items:center;gap:1rem">
+        <span class="payout">{{ r.payout|money }}</span>
+        <a class="btn btn-accent" href="{{ url_for('agent_request', delivery_id=r.row.id) }}">View</a>
+    </div>
+</div>
+{% endfor %}
+{% else %}<p class="empty-state">No pending deliveries right now. Check back soon!</p>{% endif %}
+
+{% if history %}
+<div class="section-head"><h2>Recent deliveries</h2></div>
+<div class="table-wrap"><table>
+    <thead><tr><th>Order</th><th>From</th><th>Result</th><th>Earned</th></tr></thead>
+    <tbody>{% for h in history %}<tr><td>#{{ h.order_id }}</td><td>{{ h.rest_name }}</td>
+        <td><span class="pill pill-{{ h.status }}">{{ h.status|label }}</span></td>
+        <td>{% if h.status == 'delivered' %}{{ h.payout|money }}{% else %}-{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+
+{% if settlements %}
+<div class="section-head"><h2>Razorpay settlements</h2></div>
+<div class="table-wrap"><table>
+    <thead><tr><th>Order</th><th>Amount</th><th>Status</th><th>Details</th></tr></thead>
+    <tbody>{% for s in settlements %}<tr>
+        <td>#{{ s.oid }}</td><td>{{ (s.amount_paise / 100)|money }}</td>
+        <td>{{ s.status|label }}</td><td>{{ s.message or s.transfer_id or '-' }}</td>
+    </tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}Notifications - OrderFood{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Updates</p><h1>Notifications</h1></div></div>
+{% for n in rows %}
+<div class="box row" style="align-items:flex-start;gap:var(--sp-3)">
+    <div><span class="muted small">{{ n.created_at }} UTC</span><br>{{ n.message }}</div>
+</div>
+{% else %}<p class="empty-state">Nothing here yet.</p>{% endfor %}
+{% endblock %}

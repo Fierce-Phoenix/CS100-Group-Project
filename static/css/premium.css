@@ -1,0 +1,389 @@
+/*
+ * OrderFood restrained interface.
+ * The design uses a white page, dark text, one link colour, thin rules and a
+ * single system font stack. Decoration is removed where it does not aid use.
+ */
+:root {
+    --c-bg: #fff;
+    --c-surface: #fff;
+    --c-surface-2: #f7f7f7;
+    --c-ink: #171717;
+    --c-ink-soft: #555;
+    --c-ink-faint: #777;
+    --c-line: #dedede;
+    --c-line-strong: #aaa;
+    --c-forest: #171717;
+    --c-forest-soft: #444;
+    --c-forest-tint: #f7f7f7;
+    --c-accent: #1455a3;
+    --c-accent-dark: #0b4a91;
+    --c-accent-tint: #f1f5fa;
+    --c-success: #246b37;
+    --c-success-tint: #f1f7f2;
+    --c-danger: #a32626;
+    --c-danger-tint: #fbf2f2;
+    --c-warning: #805c12;
+    --c-warning-tint: #faf7ef;
+    --c-focus: #1455a3;
+    --font-display: Arial, Helvetica, sans-serif;
+    --font-body: Arial, Helvetica, sans-serif;
+    --radius-sm: 2px;
+    --radius-md: 3px;
+    --radius-lg: 4px;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+}
+
+html { scroll-behavior: auto; }
+body {
+    background: #fff;
+    color: #171717;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    -webkit-font-smoothing: auto;
+}
+h1, h2, h3, h4 {
+    color: #171717;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.25;
+}
+h1 { font-size: clamp(1.8rem, 3vw, 2.35rem); }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.08rem; }
+p { line-height: 1.55; }
+a { color: #1455a3; text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: #0b4a91; }
+.container, .container-narrow {
+    width: min(100% - 40px, 1120px);
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 28px 0 56px;
+}
+.page-head { margin-bottom: 22px; }
+.eyebrow {
+    margin-bottom: 7px;
+    color: #555;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: none;
+}
+.section-head {
+    margin: 34px 0 14px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid #dedede;
+}
+.section-head h2 { font-size: 1.35rem; }
+
+/* A small, plain navigation bar. */
+.topbar {
+    position: relative;
+    z-index: 20;
+    display: block;
+    padding: 0 20px;
+    background: #fff;
+    color: #171717;
+    border-bottom: 1px solid #dedede;
+    box-shadow: none;
+}
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: min(100%, 1120px);
+    min-height: 54px;
+    margin: 0 auto;
+    padding: 0;
+    font-size: 14px;
+}
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #171717 !important;
+    font-size: 17px;
+    font-weight: 700;
+    text-decoration: none !important;
+    letter-spacing: -.3px;
+    white-space: nowrap;
+}
+.brand-mark {
+    display: none;
+}
+.nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    min-width: 0;
+}
+.nav .nav-link {
+    display: inline;
+    padding: 0;
+    color: #1455a3;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 400;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+.nav .nav-link:hover { color: #0b4a91; }
+.nav .nav-cta {
+    padding: 0;
+    color: #1455a3;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 400;
+    text-decoration: underline;
+}
+.nav .nav-cta:hover { color: #0b4a91; background: none; }
+.nav-count, .nav .badge {
+    display: inline;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    margin-left: 2px;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    font-size: inherit;
+    font-weight: inherit;
+}
+.wallet-info, .who {
+    color: #555;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Keep accessibility tools available without giving them a full-width banner. */
+.accessibility-tools {
+    position: absolute;
+    top: 8px;
+    right: max(20px, calc((100vw - 1120px) / 2));
+    z-index: 30;
+    font-size: 12px;
+}
+.accessibility-tools summary {
+    color: #555;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.accessibility-tools-panel {
+    position: absolute;
+    top: 24px;
+    right: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    width: min(340px, calc(100vw - 32px));
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #aaa;
+}
+.accessibility-tools-panel button {
+    padding: 5px 8px;
+    color: #171717;
+    background: #fff;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+    font: inherit;
+}
+
+/* Plain content surfaces; separators do the grouping work. */
+.box, .auth-card, .auth-panel, .stat, .order-card, .queue-col,
+.total-bar, .table-wrap, .notice, .empty-state, .cart-group,
+.r-card, .menu-item, .map-box {
+    box-shadow: none !important;
+    border-radius: 3px;
+}
+.box, .auth-card, .auth-panel, .stat, .order-card, .total-bar,
+.table-wrap, .cart-group, .r-card, .menu-item {
+    border: 1px solid #dedede;
+    background: #fff;
+}
+.r-card {
+    overflow: hidden;
+    transition: none;
+}
+.r-card:hover {
+    transform: none;
+    border-color: #aaa;
+    box-shadow: none;
+}
+.r-card .body { padding: 14px; }
+.r-card .media { background: #f3f3f3; }
+.r-card .body h3 { font-size: 1.08rem; }
+.r-banner { border-radius: 3px; box-shadow: none; }
+.r-banner .r-banner-copy { padding: 20px; }
+.queue-col { border: 1px solid #dedede; background: #f7f7f7; }
+.stat { padding: 14px; }
+.stat .muted { color: #555; }
+.stat .num { font-size: 1.7rem; font-weight: 600; }
+.sidebar {
+    background: #fff;
+    color: #171717;
+    border-right: 1px solid #dedede;
+}
+.sidebar h2 { color: #171717; }
+.sidebar a {
+    color: #1455a3;
+    border-radius: 0;
+    text-decoration: underline;
+}
+.sidebar a:hover { background: none; color: #0b4a91; }
+.dash-main { padding: 24px; }
+.map-box {
+    padding: 12px;
+    color: #555;
+    background: #f7f7f7;
+    border: 1px solid #dedede;
+    text-align: left;
+}
+
+/* Controls look like ordinary controls, not promotional callouts. */
+.btn, button.btn {
+    min-height: 36px;
+    padding: 7px 13px;
+    color: #fff;
+    background: #222;
+    border: 1px solid #222;
+    border-radius: 3px;
+    box-shadow: none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+.btn:hover, button.btn:hover {
+    color: #fff;
+    background: #444;
+    border-color: #444;
+}
+.btn-secondary, .btn-outline {
+    color: #171717 !important;
+    background: #fff !important;
+    border: 1px solid #aaa !important;
+}
+.btn-secondary:hover, .btn-outline:hover { background: #f5f5f5 !important; }
+.btn-danger {
+    color: #a32626 !important;
+    background: #fff !important;
+    border-color: #a32626 !important;
+}
+input[type=text], input[type=email], input[type=password],
+input[type=number], input[type=tel], input[type=search],
+select, textarea {
+    min-height: 38px;
+    padding: 8px 10px;
+    color: #171717;
+    background: #fff;
+    border: 1px solid #aaa;
+    border-radius: 2px;
+    box-shadow: none;
+    font: inherit;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #1455a3;
+    outline: 2px solid rgba(20,85,163,.18);
+    box-shadow: none;
+}
+label { color: #333; font-weight: 600; }
+.flash-stack { top: 66px; }
+.flash { border-radius: 2px; box-shadow: none; }
+.gmap { border-radius: 2px; border-color: #dedede; }
+.category-nav {
+    top: 0;
+    background: #fff;
+    border-bottom: 1px solid #dedede;
+    backdrop-filter: none;
+}
+.category-nav a { border-radius: 2px; }
+.category-nav a.active, .category-nav a:hover {
+    color: #171717;
+    background: #f1f1f1;
+}
+.muted, .restaurant-address, .item-desc, .field-help { color: #555; }
+.menu-item { border-color: #dedede; }
+.menu-item .item-name { font-family: Arial, Helvetica, sans-serif; }
+.menu-item .price, .req-card .payout { color: #171717; }
+.total-bar { border-radius: 3px; }
+.empty-state {
+    border: 1px solid #dedede;
+    background: #fff;
+    color: #555;
+}
+:focus-visible { outline: 2px solid #1455a3; outline-offset: 2px; }
+.reveal { opacity: 1 !important; transform: none !important; animation: none !important; }
+
+/* High-contrast mode remains a separate user choice. */
+body.high-contrast {
+    --c-bg: #000;
+    --c-surface: #000;
+    --c-surface-2: #000;
+    --c-ink: #fff;
+    --c-ink-soft: #fff;
+    --c-ink-faint: #fff;
+    --c-line: #ff0;
+    --c-line-strong: #ff0;
+}
+body.high-contrast .topbar,
+body.high-contrast .accessibility-tools-panel,
+body.high-contrast .sidebar,
+body.high-contrast .box,
+body.high-contrast .stat,
+body.high-contrast .auth-card,
+body.high-contrast .order-card {
+    color: #ff0;
+    background: #000;
+    border-color: #ff0;
+}
+body.high-contrast .brand,
+body.high-contrast .nav .nav-link,
+body.high-contrast .sidebar a { color: #ff0 !important; }
+
+@media (max-width: 820px) {
+    .topbar { padding: 0 16px; }
+    .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0;
+    }
+    .nav-links {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 14px;
+        overflow-x: auto;
+        padding: 2px 0 5px;
+    }
+    .wallet-info, .who { display: none; }
+    .accessibility-tools { top: 12px; right: 16px; }
+}
+@media (max-width: 600px) {
+    .container, .container-narrow {
+        width: calc(100% - 28px);
+        padding-top: 20px;
+    }
+    .page-head { align-items: flex-start; }
+    .r-banner { aspect-ratio: 16 / 9; }
+    .track-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

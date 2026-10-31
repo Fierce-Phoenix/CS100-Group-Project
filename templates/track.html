@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block title %}Track order #{{ o.id }} - OrderFood{% endblock %}
+{% block extra_head %}
+{% include "_maps_head.html" %}
+<script src="{{ url_for('static', filename='tracking.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+{% set role = session.get('role') %}
+{% if role == 'customer' %}{% set back = url_for('orders', order=o.id) %}
+{% elif role == 'restaurant_admin' %}{% set back = url_for('restaurant_dashboard') %}
+{% else %}{% set back = url_for('agent_active') %}{% endif %}
+<a href="{{ back }}" class="back-link">Back</a>
+<p class="eyebrow">Live tracking</p>
+<h1>Order #{{ o.id }} &middot; {{ o.rest_name }}</h1>
+{% set panel_role = 'customer' if role == 'customer' else ('restaurant' if role == 'restaurant_admin' else 'agent') %}
+{% set panel_api = url_for('api_tracking', order_id=o.id) %}
+{% set panel_static = none %}{% set panel_rest = o.rest_name ~ ' - ' ~ o.rest_address %}{% set panel_dest = o.delivery_address %}
+{% include "_track_panel.html" %}
+{% endblock %}

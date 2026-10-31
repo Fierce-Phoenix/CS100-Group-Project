@@ -1,0 +1,47 @@
+<div id="track-root" data-role="{{ panel_role }}" data-csrf="{{ csrf_token() }}"
+     {% if panel_api %}data-api="{{ panel_api }}"{% endif %}
+     {% if panel_role == 'agent' and panel_api %}data-locurl="{{ url_for('api_agent_location') }}"{% endif %}
+     {% if panel_static %}data-static='{{ panel_static|tojson }}'{% endif %}>
+    <div class="track-grid">
+        <div>
+            <div id="track-map" class="gmap" role="application" aria-label="Live delivery map"></div>
+            <p id="track-nomap" class="notice" role="status" {% if maps_cfg.key %}hidden{% endif %}>
+                Map unavailable (add <code>GOOGLE_MAPS_API_KEY</code> to <code>.env</code>). Live status still updates.</p>
+            {% if panel_role == 'agent' and panel_api %}
+            <p><a id="t-agent-navigation" class="btn btn-accent" href="#" target="_blank" rel="noopener" hidden>
+                Navigate to next stop</a></p>
+            {% endif %}
+            <p class="small muted map-legend">R: Restaurant &middot; A: Delivery agent &middot; D: Delivery address
+                <button type="button" id="t-recenter" class="btn btn-small btn-secondary" hidden>Recenter</button></p>
+            <p class="small muted" id="t-coords"></p>
+        </div>
+        <aside class="track-side">
+            {% if not panel_static %}
+            <div class="box">
+                <p class="eyebrow" id="t-stage" aria-live="polite">Loading&hellip;</p>
+                <div class="eta-big" id="t-eta" aria-live="polite">&ndash;</div>
+                <p class="muted small" id="t-sub"></p>
+            </div>
+            <div class="box"><h3 style="margin-top:0">Delivery agent</h3>
+                <p id="t-agent" style="margin:.2rem 0">&ndash;</p><p class="small muted" id="t-seen"></p></div>
+            {% endif %}
+            <div class="box small">
+                <strong>Restaurant</strong><br><span id="t-rest">{{ panel_rest or '' }}</span><br>
+                <a id="t-link-rest" href="#" target="_blank" rel="noopener" hidden>Open in Google Maps</a>
+                <hr style="border:0;border-top:1px solid var(--c-forest-soft);margin:.6rem 0">
+                <strong>Delivery address</strong><br><span id="t-dest">{{ panel_dest or '' }}</span><br>
+                <a id="t-link-dest" href="#" target="_blank" rel="noopener" hidden>Open in Google Maps</a>
+            </div>
+            {% if panel_role == 'agent' and panel_api %}
+            <div class="box">
+                <h3 style="margin-top:0">Share your location</h3>
+                <label for="ag-mode">Mode</label>
+                <select id="ag-mode"><option value="off">Off</option><option value="gps">Real GPS (phone)</option><option value="sim">Demo: simulate driving</option></select>
+                <label for="ag-speed">Demo speed</label>
+                <select id="ag-speed"><option value="1">1x (40 km/h)</option><option value="5" selected>5x</option><option value="20">20x</option></select>
+                <p class="small muted" id="ag-status" aria-live="polite" style="margin-bottom:0"></p>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</div>

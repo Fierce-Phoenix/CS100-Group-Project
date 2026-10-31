@@ -1,0 +1,16 @@
+# Local secrets
+.env
+.secret_key
+
+# Local database and wallet state
+orderfood.db
+orderfood.db-shm
+orderfood.db-wal
+wallet.json
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+
+# macOS metadata
+.DS_Store

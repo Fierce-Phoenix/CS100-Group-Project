@@ -1,0 +1,161 @@
+{% extends "dash_layout.html" %}
+{% block title %}Restaurant dashboard - OrderFood{% endblock %}
+{% block side_title %}Restaurant{% endblock %}
+{% block side_links %}
+<a href="#top">Dashboard</a><a href="#orders">Orders</a><a href="#payout">Payouts</a><a href="#feedback">Feedback</a><a href="#menu">Menu</a><a href="#info">Restaurant info</a><a href="#revenue">Revenue</a>
+{% endblock %}
+{% block extra_head %}
+{% include "_maps_head.html" %}
+<script src="{{ url_for('static', filename='location_picker.js') }}" defer></script>
+{% endblock %}
+{% block content %}
+{% macro act(o, name, text, style='') %}
+    <form method="POST" action="{{ url_for('restaurant_order_action', order_id=o.id, action=name) }}" class="inline">
+        {{ csrf_input() }}<button class="btn btn-small {{ style }}" type="submit">{{ text }}</button></form>
+{% endmacro %}
+{% macro order_card(o) %}
+<div class="order-card">
+    <div class="oc-head"><strong>#{{ o.id }}</strong><span class="pill pill-{{ o.status }}">{{ o.status|label }}</span></div>
+    <div class="summary">{{ o.summary or '-' }} &middot; {{ o.total_amount|money }}</div>
+    <div class="addr">To {{ o.delivery_address }}</div>
+    {% if (o.payment_ref or '').startswith('razorpay:') %}
+    <div class="small muted">
+        Restaurant settlement: {{ (o.restaurant_settlement_status or 'pending_setup')|label }}
+        {% if o.agent_settlement_status %}&middot; Agent settlement: {{ o.agent_settlement_status|label }}{% endif %}
+        {% if o.restaurant_settlement_message %}<br>{{ o.restaurant_settlement_message }}{% endif %}
+    </div>
+    {% else %}<div class="small muted">Customer payment: internal wallet</div>{% endif %}
+    {% if o.del_status not in ('not_requested', 'cancelled') and o.del_status != 'restaurant_fallback' %}
+        <div class="small muted" style="margin-bottom:.4rem">Delivery: {{ o.del_status|label }}{% if o.delivery_agent_name and o.delivery_agent_name not in ('Unassigned',) %} ({{ o.delivery_agent_name }}){% endif %}</div>
+    {% endif %}
+    {% if o.del_status == 'restaurant_fallback' %}<div class="fallback-note">No agent available: deliver it yourself.</div>{% endif %}
+    <div class="actions">
+    {% if o.status in ('preparing', 'ready', 'out_for_delivery') %}<a class="btn btn-small btn-secondary" href="{{ url_for('track_order', order_id=o.id) }}">Track</a>{% endif %}
+    {% if o.status == 'pending' %}{{ act(o, 'accept', 'Accept') }}{{ act(o, 'reject', 'Reject', 'btn-danger') }}
+    {% elif o.status == 'preparing' %}{{ act(o, 'ready', 'Mark ready') }}
+        {% if o.del_status == 'not_requested' %}{{ act(o, 'request_agent', 'Request agent', 'btn-secondary') }}{% endif %}
+    {% elif o.status == 'ready' %}
+        {% if o.del_status == 'not_requested' %}{{ act(o, 'request_agent', 'Request agent') }}{% endif %}
+        {% if o.del_status in ('not_requested', 'pending', 'restaurant_fallback') %}{{ act(o, 'self_deliver', 'Self-deliver', 'btn-secondary') }}{% endif %}
+    {% elif o.status == 'out_for_delivery' and o.del_status == 'self' %}{{ act(o, 'self_delivered', 'Mark delivered') }}
+    {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+<div class="row between" id="top">
+    <div><p class="eyebrow">Owner dashboard</p><h1>{{ rest.name }}</h1></div>
+    <form method="POST" action="{{ url_for('restaurant_info') }}">{{ csrf_input() }}
+        <input type="hidden" name="toggle_open" value="1">
+        <button class="btn {% if rest.is_open %}btn-accent{% else %}btn-secondary{% endif %}" type="submit"
+                aria-label="Restaurant is {{ 'open' if rest.is_open else 'closed' }}. Click to switch.">
+            {{ 'Open (click to close)' if rest.is_open else 'Closed (click to open)' }}</button>
+    </form>
+</div>
+
+<div class="stats" id="revenue">
+    <div class="stat"><div class="muted">New orders</div><div class="num">{{ stats.new }}</div></div>
+    <div class="stat"><div class="muted">Active orders</div><div class="num">{{ stats.active }}</div></div>
+    <div class="stat"><div class="muted">Today's order value</div><div class="num">{{ stats.revenue|money }}</div></div>
+    <div class="stat"><div class="muted">Internal wallet</div><div class="num">{{ wallet['balance']|money }}</div></div>
+</div>
+
+<div class="section-head" id="orders"><h2>Order queue</h2></div>
+{% if orders %}
+{% set new_o = orders|selectattr('status', 'equalto', 'pending')|list %}
+{% set prep_o = orders|selectattr('status', 'equalto', 'preparing')|list %}
+{% set ready_o = orders|selectattr('status', 'in', ['ready', 'out_for_delivery'])|list %}
+{% set done_o = orders|selectattr('status', 'in', ['delivered', 'completed', 'rejected', 'cancelled', 'disputed', 'delivery_failed'])|list %}
+<div class="queue">
+    <div class="queue-col"><h4>New <span class="count">{{ new_o|length }}</span></h4>
+        {% for o in new_o %}{{ order_card(o) }}{% endfor %}
+        {% if not new_o %}<p class="small muted">Nothing waiting.</p>{% endif %}</div>
+    <div class="queue-col"><h4>Preparing <span class="count">{{ prep_o|length }}</span></h4>
+        {% for o in prep_o %}{{ order_card(o) }}{% endfor %}
+        {% if not prep_o %}<p class="small muted">Nothing in the kitchen.</p>{% endif %}</div>
+    <div class="queue-col"><h4>Ready / out <span class="count">{{ ready_o|length }}</span></h4>
+        {% for o in ready_o %}{{ order_card(o) }}{% endfor %}
+        {% if not ready_o %}<p class="small muted">Nothing on the way.</p>{% endif %}</div>
+    <div class="queue-col"><h4>History <span class="count">{{ done_o|length }}</span></h4>
+        {% for o in done_o[:6] %}{{ order_card(o) }}{% endfor %}
+        {% if not done_o %}<p class="small muted">No completed orders yet.</p>{% endif %}</div>
+</div>
+{% else %}<p class="empty-state">No orders yet.</p>{% endif %}
+
+<div class="section-head" id="payout"><h2>Restaurant payout account</h2></div>
+<div class="box">
+    <p>Enter the Razorpay linked-account ID created and verified for your restaurant. Bank details stay with Razorpay; this app stores only the linked-account ID. Transfers require platform Route activation.</p>
+    <form method="POST" action="{{ url_for('restaurant_payout_settings') }}">
+        {{ csrf_input() }}
+        <label for="restaurant-payout-account">Razorpay linked-account ID</label>
+        <input id="restaurant-payout-account" name="payout_account_id" type="text"
+               value="{{ rest.payout_account_id or '' }}" placeholder="acc_..." pattern="acc_[A-Za-z0-9]+">
+        <button class="btn btn-accent" type="submit">Save payout account</button>
+    </form>
+    {% if rest.payout_account_id %}
+    <form method="POST" action="{{ url_for('restaurant_payout_settings') }}" style="margin-top:.7rem">
+        {{ csrf_input() }}<input type="hidden" name="process_pending" value="1">
+        <button class="btn btn-secondary" type="submit">Check pending payouts</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="section-head" id="feedback"><h2>Customer feedback</h2></div>
+{% for review in reviews %}
+<article class="box">
+    <div class="row between"><strong>{{ review.rating }}/5 from {{ review.customer_name }}</strong>
+        <span class="small muted">Order #{{ review.order_id }} &middot; {{ review.created_at }}</span></div>
+    <p>{{ review.feedback }}</p>
+</article>
+{% else %}<p class="empty-state">Feedback submitted after completed orders will appear here.</p>{% endfor %}
+
+<div class="section-head" id="menu"><h2>Menu</h2></div>
+<p class="muted">Customers can't order items marked unavailable.</p>
+{% for m in menu %}
+<div class="menu-item {% if not m.is_available %}sold-out{% endif %}">
+    <div><p class="item-name">{{ m.name }}</p>
+        <form method="POST" action="{{ url_for('menu_edit', item_id=m.id, action='category') }}" class="row">{{ csrf_input() }}
+            <label class="visually-hidden" for="cat{{ m.id }}">Category for {{ m.name }}</label>
+            <select id="cat{{ m.id }}" name="category" aria-label="Category for {{ m.name }}">
+                {% for category in FOOD_CATEGORIES %}<option value="{{ category }}" {% if category == m.category %}selected{% endif %}>{{ category }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-secondary btn-small" type="submit">Save category</button>
+        </form>
+    </div>
+    <div class="row">
+        <form method="POST" action="{{ url_for('menu_edit', item_id=m.id, action='price') }}" class="row">{{ csrf_input() }}
+            <label class="muted small" for="p{{ m.id }}" style="margin:0">Price</label>
+            <input type="number" class="short" id="p{{ m.id }}" name="price" min="1" step="0.5" value="{{ m.price|int if m.price == m.price|int else m.price }}">
+            <button class="btn btn-secondary btn-small" type="submit">Save</button></form>
+        <form method="POST" action="{{ url_for('menu_edit', item_id=m.id, action='toggle') }}" class="inline">{{ csrf_input() }}
+            <button class="btn btn-secondary btn-small" type="submit">{{ 'Mark unavailable' if m.is_available else 'Mark available' }}</button></form>
+        <form method="POST" action="{{ url_for('menu_edit', item_id=m.id, action='delete') }}" class="inline"
+              onsubmit="return confirm('Delete {{ m.name|e }}?')">{{ csrf_input() }}
+            <button class="btn btn-danger btn-small" type="submit">Delete</button></form>
+    </div>
+</div>
+{% endfor %}
+<form method="POST" action="{{ url_for('menu_add') }}" class="box field-inline" style="margin-top:var(--sp-4)">{{ csrf_input() }}
+    <div><label for="new-name">New item name</label><input type="text" id="new-name" name="name" required></div>
+    <div><label for="new-price">Price</label><input type="number" id="new-price" name="price" min="1" step="0.5" required></div>
+    <div><label for="new-cat">Category</label>
+        <select id="new-cat" name="category">{% for category in FOOD_CATEGORIES %}
+            <option value="{{ category }}" {% if category == 'Main Course' %}selected{% endif %}>{{ category }}</option>
+        {% endfor %}</select></div>
+    <div style="flex:0 0 auto"><button class="btn btn-accent" type="submit">Add item</button></div>
+</form>
+
+<div class="section-head" id="info"><h2>Restaurant info</h2></div>
+<form method="POST" action="{{ url_for('restaurant_info') }}" class="box loc-picker" data-pin="restaurant"
+      {% if rest.lat is not none %}data-lat="{{ rest.lat }}" data-lon="{{ rest.lon }}"{% endif %}>{{ csrf_input() }}
+    <input type="hidden" name="lat" value="{{ rest.lat if rest.lat is not none else '' }}"><input type="hidden" name="lon" value="{{ rest.lon if rest.lon is not none else '' }}">
+    <label for="r-name">Name</label><input type="text" id="r-name" name="name" required value="{{ rest.name }}">
+    <label for="r-addr">Address / location</label><input type="text" id="r-addr" name="address" required value="{{ rest.address }}">
+    <label>Find on map (drag the pin to your exact door)</label>
+    <div class="lp-search"></div>
+    <div class="gmap lp-map" role="application" aria-label="Map: set the restaurant location"></div>
+    <p class="notice lp-nomap" hidden>Maps unavailable: location stays as it is.</p>
+    <label for="r-desc">Description</label><input type="text" id="r-desc" name="description" value="{{ rest.description or '' }}">
+    <p><button class="btn" type="submit">Save info</button></p>
+</form>
+{% endblock %}
